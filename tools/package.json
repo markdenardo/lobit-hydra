@@ -1,0 +1,12 @@
+{
+  "name": "lobit-hydra-tools",
+  "version": "1.0.0",
+  "description": "Terminal tools for the lobit-hydra live event pack",
+  "type": "module",
+  "scripts": {
+    "nasa": "node nasa_gif.js"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

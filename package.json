@@ -1,0 +1,10 @@
+{
+  "name": "lobit-hydra",
+  "version": "1.0.0",
+  "description": "Hydra livecode pack for 6-hour chiptune/techno/jungle IDM events. 30 patches + NASA terminal tools.",
+  "scripts": {
+    "hydra": "cd hydra && npm start",
+    "install-hydra": "cd hydra && npm install",
+    "nasa": "node tools/nasa_gif.js"
+  }
+}
