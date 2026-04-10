@@ -1,0 +1,13 @@
+node_modules/
+tools/downloads/
+
+# WebStorm — share run configs and code style, ignore personal workspace state
+.idea/*
+!.idea/runConfigurations/
+!.idea/.gitignore
+!.idea/codeStyles/
+!.idea/jsLinters/
+
+.DS_Store
+*.log
+npm-debug.log*

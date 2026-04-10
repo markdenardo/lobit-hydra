@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="NASA — Random Space Image" type="NodeJSConfigurationType" factoryName="Node.js">
+    <node-parameters value="" />
+    <working-dir value="$PROJECT_DIR$" />
+    <path-to-js-file value="tools/nasa_gif.js" />
+    <application-parameters value="random" />
+    <method v="2" />
+  </configuration>
+</component>

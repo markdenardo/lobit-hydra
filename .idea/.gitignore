@@ -1,0 +1,7 @@
+# Ignore personal workspace state, share configs
+workspace.xml
+tasks.xml
+usage.statistics.xml
+dictionaries/
+shelf/
+contentModel.xml
