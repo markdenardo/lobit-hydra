@@ -10,12 +10,14 @@
     "test": "node --test test/sketches.test.js test/nasa.test.js",
     "test:sketches": "node --test test/sketches.test.js",
     "test:nasa": "node --test test/nasa.test.js",
-    "hydra": "cd hydra && npm start",
+    "hydra": "cd hydra && npm run dev",
     "install-hydra": "cd hydra && npm install",
     "nasa": "node tools/nasa_gif.js",
     "nasa:apod": "node tools/nasa_gif.js apod",
     "nasa:random": "node tools/nasa_gif.js random",
     "nasa:search": "node tools/nasa_gif.js search nebula",
+    "library:serve": "node tools/library_server.js",
+    "library:list": "node tools/nasa_gif.js list",
     "lint": "eslint sketches/**/*.js tools/**/*.js"
   },
   "devDependencies": {

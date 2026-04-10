@@ -1,22 +1,23 @@
 #!/usr/bin/env node
 // nasa_gif.js — Terminal tool for finding NASA imagery for live event use
-// Uses NASA Images & Video Library API (no key required for basic use)
-// and APOD (Astronomy Picture of the Day)
+// Downloads are rendered as MP4 and saved to the project library.
 //
 // Usage:
 //   node nasa_gif.js search <query>           Search NASA image/video library
 //   node nasa_gif.js apod                     Get today's Astronomy Picture of the Day
 //   node nasa_gif.js apod <YYYY-MM-DD>        Get APOD for specific date
-//   node nasa_gif.js download <url> <file>    Download an asset
+//   node nasa_gif.js download <url> <name>    Download + render to library as <name>.mp4
 //   node nasa_gif.js random                   Random space image (great for VJ drops)
+//   node nasa_gif.js list                     Show all videos in the library
 //
 // API key: uses DEMO_KEY (1000 req/day, 30/hr). Set NASA_API_KEY env var for more.
 
-import { createWriteStream, existsSync, mkdirSync } from 'fs'
+import { createWriteStream, existsSync, mkdirSync, rmSync } from 'fs'
 import { pipeline } from 'stream/promises'
 import https from 'https'
 import http from 'http'
 import path from 'path'
+import { tmpdir } from 'os'
 import { fileURLToPath } from 'url'
 import {
   buildSearchUrl,
@@ -27,9 +28,9 @@ import {
   formatApodFilename,
   extractPreviewUrl,
 } from './nasa-core.js'
+import { saveToLibrary, readIndex } from './library.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const DOWNLOAD_DIR = path.join(__dirname, 'downloads')
 const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -48,18 +49,18 @@ function fetchJSON(url) {
   })
 }
 
-function downloadFile(url, dest) {
-  if (!existsSync(DOWNLOAD_DIR)) mkdirSync(DOWNLOAD_DIR, { recursive: true })
-  const filePath = path.join(DOWNLOAD_DIR, dest)
+function downloadToPath(url, destPath) {
+  const dir = path.dirname(destPath)
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http
     client.get(url, (res) => {
       if (res.statusCode === 301 || res.statusCode === 302) {
-        return downloadFile(res.headers.location, dest).then(resolve).catch(reject)
+        return downloadToPath(res.headers.location, destPath).then(resolve).catch(reject)
       }
       if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`))
-      const writer = createWriteStream(filePath)
-      pipeline(res, writer).then(() => resolve(filePath)).catch(reject)
+      const writer = createWriteStream(destPath)
+      pipeline(res, writer).then(() => resolve(destPath)).catch(reject)
     }).on('error', reject)
   })
 }
@@ -88,14 +89,12 @@ async function search(query, mediaType = '') {
   const data = await fetchJSON(url)
   const items = parseSearchItems(data)
 
-  if (!items.length) {
-    console.log('No results found.')
-    return
-  }
+  if (!items.length) { console.log('No results found.'); return }
 
   items.forEach((item, idx) => printItem(item, idx))
   printDivider()
-  console.log(`\n${items.length} results. Download with: node nasa_gif.js download <url> <filename>`)
+  console.log(`\n${items.length} results.`)
+  console.log(`Add to library: node nasa_gif.js download <url> <name>`)
 }
 
 async function apod(dateStr) {
@@ -104,6 +103,7 @@ async function apod(dateStr) {
 
   const data = await fetchJSON(url)
   const assetUrl = extractApodAssetUrl(data)
+  const suggestedName = formatApodFilename(data).replace(/\.[^.]+$/, '')
 
   printDivider()
   console.log(`Title: ${data.title}`)
@@ -113,7 +113,7 @@ async function apod(dateStr) {
   if (data.thumbnail_url) console.log(`Thumb: ${data.thumbnail_url}`)
   printDivider()
   console.log(`\n${data.explanation?.slice(0, 300)}...\n`)
-  console.log(`Download: node nasa_gif.js download "${assetUrl}" "${formatApodFilename(data)}"`)
+  console.log(`Add to library: node nasa_gif.js download "${assetUrl}" "${suggestedName}"`)
 }
 
 async function random() {
@@ -122,22 +122,45 @@ async function random() {
   await apod(dateStr)
 }
 
-async function download(url, filename) {
-  if (!url || !filename) {
-    console.error('Usage: node nasa_gif.js download <url> <filename>')
+async function download(url, name) {
+  if (!url || !name) {
+    console.error('Usage: node nasa_gif.js download <url> <name>')
+    console.error('  name: library entry name (no extension) — used in initVideo()')
     process.exit(1)
   }
-  console.log(`Downloading ${filename}...`)
-  const dest = await downloadFile(url, filename)
-  console.log(`Saved to: ${dest}`)
+
+  const rawExt = path.extname(url.split('?')[0]).toLowerCase() || '.jpg'
+  const tmpPath = path.join(tmpdir(), `lobit_${Date.now()}${rawExt}`)
+
+  console.log(`\nDownloading...`)
+  await downloadToPath(url, tmpPath)
+
+  console.log(`Rendering as MP4 → library...`)
+  const dest = await saveToLibrary(tmpPath, name, { source: url })
+  rmSync(tmpPath, { force: true })
+
+  console.log(`\nSaved: ${dest}`)
+  console.log(`Hydra: initVideo('${name}')`)
 }
 
-async function searchGifs(query) {
-  // NASA doesn't have a GIF endpoint, but their video library has animations.
-  // This searches for videos + images tagged with the query.
-  console.log('Note: NASA Images API does not index GIFs directly.')
-  console.log('Searching for videos and animated content instead.\n')
-  await search(query, 'video')
+async function list() {
+  const entries = readIndex()
+  if (!entries.length) {
+    console.log('\nLibrary is empty.')
+    console.log('Add a video: node nasa_gif.js download <url> <name>\n')
+    return
+  }
+
+  printDivider()
+  entries.forEach((e, i) => {
+    const name = e.filename.replace(/\.mp4$/, '')
+    console.log(`[${i}] ${name}`)
+    if (e.added) console.log(`    Added: ${e.added.slice(0, 10)}`)
+    if (e.source) console.log(`    ${e.source.slice(0, 72)}`)
+  })
+  printDivider()
+  console.log(`\n${entries.length} video${entries.length === 1 ? '' : 's'} in library`)
+  console.log(`Hydra: initVideo('name')  — see tools/init_video.js\n`)
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -157,9 +180,12 @@ switch (cmd) {
   case 'download':
     await download(args[0], args[1])
     break
+  case 'list':
+    await list()
+    break
   case 'gifs':
   case 'gif':
-    await searchGifs(args.join(' ') || 'space')
+    await search(args.join(' ') || 'space', 'video')
     break
   default:
     console.log(`
@@ -170,8 +196,11 @@ lobit-hydra :: NASA image tool
   node nasa_gif.js apod                     Today's Astronomy Picture of the Day
   node nasa_gif.js apod <YYYY-MM-DD>        APOD for a specific date
   node nasa_gif.js random                   Random space image (random APOD)
-  node nasa_gif.js download <url> <file>    Download an asset to ./downloads/
+  node nasa_gif.js download <url> <name>    Download + render to library as <name>.mp4
+  node nasa_gif.js list                     List all videos in the library
 
 Set NASA_API_KEY env var to use your own key (default: DEMO_KEY, 30 req/hr).
+Start library server:  npm run library:serve  → http://localhost:3001
+Hydra usage:           initVideo('name')      — see tools/init_video.js
 `)
 }

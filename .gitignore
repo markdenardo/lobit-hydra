@@ -1,5 +1,7 @@
 node_modules/
 tools/downloads/
+library/*.mp4
+library/*.webm
 
 # WebStorm — share run configs and code style, ignore personal workspace state
 .idea/*
