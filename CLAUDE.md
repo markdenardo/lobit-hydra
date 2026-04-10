@@ -1,6 +1,6 @@
 # Claude Code — Project Instructions: lobit-hydra
 
-Hydra livecode visual pack for a 6-hour chiptune / techno / jungle IDM event. Three artists, one screen, full offline capability. 30 patches + NASA image terminal tools.
+Hydra livecode visual pack for a 6-hour chiptune / techno / jungle IDM event. Three artists, one screen, full offline capability. 30 patches + NASA image tools + MP4 video library with Hydra `initVideo()` integration.
 
 ---
 
@@ -18,11 +18,12 @@ A **performance-ready collection of Hydra sketches** grouped by genre, plus Node
 
 ## Stack
 
-- **Hydra** — `hydra/` submodule, run via `npm run hydra` (local server at localhost:8000)
+- **Hydra** — `hydra/` submodule (hydra-synth/hydra), Vite dev server via `npm run hydra`
 - **Node.js ≥18** — `"type": "module"` throughout; uses ES module imports
 - **`node:test`** — built-in test runner, zero extra deps
 - **`node:vm`** — runs sketches in an isolated context for testing
 - **NASA Images API** — no auth required for basic use (`DEMO_KEY`)
+- **ffmpeg** — required for MP4 conversion (`brew install ffmpeg`); used by `library.js`
 - **Python 3.8+** — alternative CLI with `chafa` ASCII art support
 
 ---
@@ -30,20 +31,26 @@ A **performance-ready collection of Hydra sketches** grouped by genre, plus Node
 ## Running the project
 
 ```bash
-# One-time setup (needs internet)
+# One-time setup (needs internet + ffmpeg)
 npm run install-hydra
+brew install ffmpeg         # required for MP4 conversion
 
 # Start Hydra editor (works offline after setup)
-npm run hydra            # → http://localhost:8000
+npm run hydra               # → URL shown in terminal (Vite, typically :5173)
+
+# Start library server (separate terminal — required for initVideo())
+npm run library:serve       # → http://localhost:3001
 
 # Run all tests
 npm test
 
 # NASA tools
-npm run nasa:apod        # Today's APOD
-npm run nasa:random      # Random space image
-npm run nasa:search      # Search (edit query in package.json scripts)
+npm run nasa:apod           # Today's APOD
+npm run nasa:random         # Random space image
+npm run nasa:search         # Search (edit query in package.json scripts)
 node tools/nasa_gif.js search "nebula"
+node tools/nasa_gif.js download "<url>" "<name>"   # → library/<name>.mp4
+npm run library:list        # List everything in the library
 ```
 
 ---
@@ -56,8 +63,12 @@ node tools/nasa_gif.js search "nebula"
 | `sketches/techno/` | 10 patches — industrial, acid, oscilloscope, feedback |
 | `sketches/jungle_idm/` | 10 patches — glitch, Amen cuts, IDM feedback, polyrhythm |
 | `tools/nasa-core.js` | Pure URL builders + response parsers — **the testable part** |
-| `tools/nasa_gif.js` | CLI entry point — imports from nasa-core.js |
+| `tools/nasa_gif.js` | CLI entry point — search, download to library, list |
 | `tools/nasa_gif.py` | Python version + `chafa` ASCII art renderer |
+| `tools/library.js` | Library management — ffmpeg conversion, index.json reads/writes |
+| `tools/library_server.js` | Static HTTP server (port 3001) with CORS for Hydra `initVideo()` |
+| `tools/init_video.js` | Hydra snippet — paste once into editor, then call `initVideo('name')` |
+| `library/` | MP4 files + `index.json` — gitignores `*.mp4`, commits index only |
 | `test/hydra-mock.js` | Mock Hydra context factory for `node:vm` |
 | `test/sketches.test.js` | Tests all 30 sketches against the mock |
 | `test/nasa.test.js` | Unit tests for URL building + response parsing |
@@ -162,11 +173,45 @@ o0 … o3    // output buffers
 
 ---
 
+## Video library workflow
+
+The library system converts any downloaded asset (APOD image, NASA video, GIF) to MP4 via ffmpeg, stores it in `library/`, and serves it over HTTP so Hydra can load it with `initVideo()`.
+
+```
+download command
+  → downloadToPath() — temp file in /tmp
+  → saveToLibrary()  — ffmpeg converts to MP4 → library/<name>.mp4
+  → addEntry()       — updates library/index.json
+  → temp file deleted
+
+library server (port 3001)
+  → GET /            → JSON list of available MP4s
+  → GET /<name>.mp4  → stream the file with CORS headers
+
+Hydra editor
+  → paste tools/init_video.js once
+  → initVideo('name')  → b.initVideo('http://localhost:3001/name.mp4')
+                       → returns src(b) for chaining
+```
+
+### ffmpeg conversion rules (in `library.js`)
+
+| Source ext | ffmpeg behaviour |
+|------------|-----------------|
+| `.jpg` `.png` `.webp` | 5-second looping MP4 (still image → video) |
+| `.gif` | MP4 preserving animation timing |
+| `.mp4` `.mov` `.webm` `.avi` `.mkv` | Re-encode to H.264 MP4 |
+
+If ffmpeg is not installed, `saveToLibrary()` will throw with an install hint.
+
+---
+
 ## What not to do
 
 - Do not add `import`/`export` to sketch files — they're paste-into-Hydra scripts, not modules
 - Do not omit `.out(o0)` from a sketch — the test suite enforces this
-- Do not write business logic in `nasa_gif.js` — keep it as CLI wiring only; logic goes in `nasa-core.js`
+- Do not write business logic in `nasa_gif.js` — keep it as CLI wiring only; logic goes in `nasa-core.js` or `library.js`
+- Do not write library or conversion logic in `nasa-core.js` — it must stay pure (no I/O) so NASA tests need no mocks
 - Do not contact the NASA API from tests — keep tests pure/offline
-- Do not commit `tools/downloads/` — it's gitignored
+- Do not commit `library/*.mp4` or `library/*.webm` — they're gitignored; `library/index.json` is committed
 - Do not set `strobeRate` above 3hz in `tk_03_strobe_bw.js` — public safety
