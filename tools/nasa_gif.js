@@ -18,12 +18,19 @@ import https from 'https'
 import http from 'http'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import {
+  buildSearchUrl,
+  buildApodUrl,
+  randomApodDate,
+  parseSearchItems,
+  extractApodAssetUrl,
+  formatApodFilename,
+  extractPreviewUrl,
+} from './nasa-core.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DOWNLOAD_DIR = path.join(__dirname, 'downloads')
 const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY'
-const NASA_IMAGES_BASE = 'https://images-api.nasa.gov'
-const NASA_APOD_BASE = `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}`
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,9 +68,8 @@ function printDivider() { console.log('─'.repeat(60)) }
 
 function printItem(item, idx) {
   const data = item.data?.[0] ?? {}
-  const links = item.links ?? []
   const mediaType = data.media_type || 'image'
-  const preview = links.find(l => l.rel === 'preview')?.href || links[0]?.href || '(no preview)'
+  const preview = extractPreviewUrl(item) ?? '(no preview)'
 
   printDivider()
   console.log(`[${idx + 1}] ${data.title || 'Untitled'}`)
@@ -76,12 +82,11 @@ function printItem(item, idx) {
 // ── commands ──────────────────────────────────────────────────────────────────
 
 async function search(query, mediaType = '') {
-  const typeParam = mediaType ? `&media_type=${mediaType}` : ''
-  const url = `${NASA_IMAGES_BASE}/search?q=${encodeURIComponent(query)}${typeParam}&page_size=12`
+  const url = buildSearchUrl(query, mediaType)
   console.log(`\nSearching NASA library for: "${query}"\n`)
 
   const data = await fetchJSON(url)
-  const items = data.collection?.items ?? []
+  const items = parseSearchItems(data)
 
   if (!items.length) {
     console.log('No results found.')
@@ -94,32 +99,25 @@ async function search(query, mediaType = '') {
 }
 
 async function apod(dateStr) {
-  const dateParam = dateStr ? `&date=${dateStr}` : ''
-  const url = `${NASA_APOD_BASE}${dateParam}`
+  const url = buildApodUrl(dateStr, NASA_API_KEY)
   console.log(`\nFetching APOD${dateStr ? ` for ${dateStr}` : ' (today)'}...\n`)
 
   const data = await fetchJSON(url)
+  const assetUrl = extractApodAssetUrl(data)
 
   printDivider()
   console.log(`Title: ${data.title}`)
   console.log(`Date:  ${data.date}`)
   console.log(`Type:  ${data.media_type}`)
-  console.log(`URL:   ${data.hdurl || data.url}`)
+  console.log(`URL:   ${assetUrl}`)
   if (data.thumbnail_url) console.log(`Thumb: ${data.thumbnail_url}`)
   printDivider()
   console.log(`\n${data.explanation?.slice(0, 300)}...\n`)
-
-  const ext = (data.hdurl || data.url).split('.').pop().split('?')[0]
-  const fname = `apod_${data.date}.${ext}`
-  console.log(`Download: node nasa_gif.js download "${data.hdurl || data.url}" "${fname}"`)
+  console.log(`Download: node nasa_gif.js download "${assetUrl}" "${formatApodFilename(data)}"`)
 }
 
 async function random() {
-  // Pull a random date APOD between 1995-06-16 and today
-  const start = new Date('1995-06-16').getTime()
-  const end = Date.now() - 86400000 // yesterday
-  const randDate = new Date(start + Math.random() * (end - start))
-  const dateStr = randDate.toISOString().slice(0, 10)
+  const dateStr = randomApodDate()
   console.log(`Random APOD date: ${dateStr}`)
   await apod(dateStr)
 }
