@@ -12,6 +12,7 @@
     "test:nasa": "node --test test/nasa.test.js",
     "hydra": "cd hydra && npm run dev",
     "install-hydra": "cd hydra && npm install",
+    "deck": "node tools/deck_server.js",
     "nasa": "node tools/nasa_gif.js",
     "nasa:apod": "node tools/nasa_gif.js apod",
     "nasa:random": "node tools/nasa_gif.js random",

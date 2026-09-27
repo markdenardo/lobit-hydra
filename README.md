@@ -127,6 +127,8 @@ Set `NASA_API_KEY` env var for higher rate limits (default: DEMO_KEY, 30 req/hr)
 
 Downloaded assets are stored in `library/` as MP4 and tracked in `library/index.json`. The library server exposes them over HTTP with CORS headers so Hydra can load them via `initVideo()`.
 
+> **New to `initVideo()`?** See [QUICKSTART.md](QUICKSTART.md) for the shortest path from a running library server to a video on screen.
+
 ```bash
 # Start the library server (keep running alongside Hydra)
 npm run library:serve

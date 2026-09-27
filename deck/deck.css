@@ -1,0 +1,143 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+}
+
+#hydra-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 360px;
+  max-height: 100vh;
+  overflow-y: auto;
+  background: rgba(10, 10, 14, 0.88);
+  color: #e6e6e6;
+  padding: 14px;
+  font-size: 13px;
+  backdrop-filter: blur(4px);
+  border-left: 1px solid #2a2a33;
+  transition: transform 0.15s ease;
+}
+
+#panel.collapsed {
+  transform: translateX(calc(100% - 34px));
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+h1 {
+  font-size: 14px;
+  margin: 0;
+  letter-spacing: 0.03em;
+  color: #7fffd4;
+  white-space: nowrap;
+}
+
+#status {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: #999;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a33;
+  margin-right: 3px;
+}
+.dot.ok { background: #3c3; }
+
+button {
+  font-family: inherit;
+  background: #1c1c24;
+  color: #e6e6e6;
+  border: 1px solid #333340;
+  border-radius: 4px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+button:hover { background: #2a2a36; border-color: #7fffd4; }
+button.active { border-color: #7fffd4; color: #7fffd4; }
+
+#tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.tab-panel.active { display: flex; }
+
+.patch-btn {
+  text-align: left;
+  padding: 6px 8px;
+}
+
+.empty {
+  color: #888;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+#editor-wrap {
+  border-top: 1px solid #2a2a33;
+  padding-top: 8px;
+}
+
+#editor-label {
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 4px;
+}
+#current-name { color: #7fffd4; }
+
+#editor {
+  width: 100%;
+  height: 160px;
+  background: #0a0a0e;
+  color: #e6e6e6;
+  border: 1px solid #333340;
+  border-radius: 4px;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+#editor-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+#editor-actions button { flex: 1; }

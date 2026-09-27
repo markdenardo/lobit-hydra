@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>lobit hydra deck</title>
+<link rel="stylesheet" href="/deck/deck.css">
+</head>
+<body>
+  <canvas id="hydra-canvas"></canvas>
+
+  <div id="panel">
+    <header>
+      <h1>lobit hydra deck</h1>
+      <div id="status">
+        <span><span id="deck-status" class="dot"></span> deck</span>
+        <span><span id="lib-status" class="dot"></span> library</span>
+      </div>
+      <button id="toggle-panel" title="Hide panel (H)">hide</button>
+    </header>
+
+    <nav id="tabs">
+      <button class="tab active" data-tab="chiptune">chiptune</button>
+      <button class="tab" data-tab="techno">techno</button>
+      <button class="tab" data-tab="jungle_idm">jungle/idm</button>
+      <button class="tab" data-tab="library">video library</button>
+    </nav>
+
+    <div id="sketch-list-chiptune" class="tab-panel active" data-panel="chiptune"></div>
+    <div id="sketch-list-techno" class="tab-panel" data-panel="techno"></div>
+    <div id="sketch-list-jungle_idm" class="tab-panel" data-panel="jungle_idm"></div>
+    <div id="library-list" class="tab-panel" data-panel="library"></div>
+
+    <div id="editor-wrap">
+      <div id="editor-label">now playing: <span id="current-name">&mdash;</span></div>
+      <textarea id="editor" spellcheck="false" placeholder="Click a patch, or write Hydra code here..."></textarea>
+      <div id="editor-actions">
+        <button id="run-btn">Run (Ctrl+Enter)</button>
+        <button id="clear-btn">Clear to black</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local hydra-synth bundle: works fully offline once installed -->
+  <script src="/hydra/node_modules/hydra-synth/dist/hydra-synth.js"></script>
+  <!-- Same file used in the raw Hydra editor workflow — single source of truth -->
+  <script src="/tools/init_video.js"></script>
+  <script src="/deck/deck.js"></script>
+</body>
+</html>
