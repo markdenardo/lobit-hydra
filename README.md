@@ -7,6 +7,7 @@ A Hydra livecoding visual pack for a 6-hour chiptune / techno / jungle IDM event
 ## What's in here
 
 ```
+deck/               Browser-based sketch/video browser (WIP — not performance-ready yet)
 hydra/              Hydra web editor — cloned for offline use (Vite dev server)
 library/            MP4 video library for Hydra's initVideo() — built from NASA downloads
 sketches/
@@ -19,6 +20,7 @@ tools/
   nasa-core.js      Pure URL builders + response parsers (imported by CLI + tests)
   library.js        Library management — MP4 conversion via ffmpeg, index.json
   library_server.js Static HTTP server (port 3001) with CORS for Hydra's initVideo()
+  deck_server.js    Static server for deck/ (WIP) — npm run deck, port 8088
   init_video.js     Hydra snippet — paste into editor to use initVideo()
 test/
   hydra-mock.js     Mock Hydra context for node:vm

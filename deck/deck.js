@@ -1,6 +1,8 @@
 // deck.js — browser-side logic for the lobit hydra deck
 // Loaded after hydra-synth.js (sets up window globals: osc, o0, s0, src, time, ...)
 // and tools/init_video.js (defines the initVideo() helper).
+//
+// WIP — not yet performance-ready, needs more testing before relying on it live.
 
 const LIBRARY_URL = 'http://localhost:3001'
 
