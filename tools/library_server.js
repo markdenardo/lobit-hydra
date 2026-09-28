@@ -1,22 +1,45 @@
 #!/usr/bin/env node
 // library_server.js — Static file server for library/ on port 3001
 // Serves MP4s with CORS headers so Hydra's initVideo() can load them.
+// Also serves the sketches/ catalog (GET /sketches, GET /sketches/<category>/<file>.js)
+// so the full sketch library is available from the same local server as the videos.
 //
 // Usage: npm run library:serve  (or: node tools/library_server.js)
 
-import { createReadStream, statSync, existsSync, readdirSync } from 'fs'
+import { createReadStream, readFileSync, statSync, existsSync, readdirSync } from 'fs'
 import { createServer } from 'http'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const LIBRARY_DIR = path.resolve(__dirname, '../library')
+const SKETCH_DIR = path.resolve(__dirname, '../sketches')
+const SKETCH_CATEGORIES = ['chiptune', 'techno', 'jungle_idm']
 const PORT = 3001
 
 const MIME = {
   '.mp4':  'video/mp4',
   '.webm': 'video/webm',
   '.json': 'application/json',
+  '.js':   'application/javascript',
+}
+
+function listSketches() {
+  const out = []
+  for (const category of SKETCH_CATEGORIES) {
+    const dir = path.join(SKETCH_DIR, category)
+    if (!existsSync(dir)) continue
+    for (const file of readdirSync(dir).filter(f => f.endsWith('.js')).sort()) {
+      const firstLine = readFileSync(path.join(dir, file), 'utf8').split('\n')[0]
+      out.push({
+        category,
+        file,
+        title: firstLine.replace(/^\/\/\s*/, '').trim() || file,
+        path: `/sketches/${category}/${file}`,
+      })
+    }
+  }
+  return out
 }
 
 function corsHeaders() {
@@ -40,6 +63,28 @@ createServer((req, res) => {
       : []
     res.writeHead(200, { 'Content-Type': 'application/json', ...corsHeaders() })
     res.end(JSON.stringify(files, null, 2))
+    return
+  }
+
+  // GET /sketches → list all sketches (category, file, title)
+  if (req.url === '/sketches' || req.url === '/sketches/') {
+    res.writeHead(200, { 'Content-Type': 'application/json', ...corsHeaders() })
+    res.end(JSON.stringify(listSketches(), null, 2))
+    return
+  }
+
+  // GET /sketches/<category>/<file>.js → raw sketch source
+  if (req.url.startsWith('/sketches/')) {
+    const relPath = path.normalize(decodeURIComponent(req.url)).replace(/^\/+/, '')
+    const sketchPath = path.join(SKETCH_DIR, relPath.slice('sketches/'.length))
+    if (!sketchPath.startsWith(SKETCH_DIR + path.sep)) {
+      res.writeHead(403); res.end(); return
+    }
+    if (!existsSync(sketchPath) || !sketchPath.endsWith('.js')) {
+      res.writeHead(404, corsHeaders()); res.end('Not found'); return
+    }
+    res.writeHead(200, { 'Content-Type': 'application/javascript', ...corsHeaders() })
+    createReadStream(sketchPath).pipe(res)
     return
   }
 
@@ -67,6 +112,7 @@ createServer((req, res) => {
   createReadStream(filePath).pipe(res)
 }).listen(PORT, () => {
   console.log(`\nLibrary server → http://localhost:${PORT}/`)
-  console.log(`Serving: ${LIBRARY_DIR}`)
+  console.log(`Serving videos: ${LIBRARY_DIR}`)
+  console.log(`Serving sketches: ${SKETCH_DIR}  (GET /sketches, GET /sketches/<category>/<file>.js)`)
   console.log(`\nHydra usage: initVideo('name')  — see tools/init_video.js\n`)
 })

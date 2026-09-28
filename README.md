@@ -7,6 +7,7 @@ A Hydra livecoding visual pack for a 6-hour chiptune / techno / jungle IDM event
 ## What's in here
 
 ```
+deck/               Browser-based sketch/video browser (WIP — not performance-ready yet)
 hydra/              Hydra web editor — cloned for offline use (Vite dev server)
 library/            MP4 video library for Hydra's initVideo() — built from NASA downloads
 sketches/
@@ -18,7 +19,8 @@ tools/
   nasa_gif.py       Python version — same search + terminal ASCII art via chafa
   nasa-core.js      Pure URL builders + response parsers (imported by CLI + tests)
   library.js        Library management — MP4 conversion via ffmpeg, index.json
-  library_server.js Static HTTP server (port 3001) with CORS for Hydra's initVideo()
+  library_server.js Static HTTP server (port 3001) with CORS — serves videos for initVideo() and the /sketches catalog
+  deck_server.js    Static server for deck/ (WIP) — npm run deck, port 8088
   init_video.js     Hydra snippet — paste into editor to use initVideo()
 test/
   hydra-mock.js     Mock Hydra context for node:vm
@@ -127,6 +129,8 @@ Set `NASA_API_KEY` env var for higher rate limits (default: DEMO_KEY, 30 req/hr)
 
 Downloaded assets are stored in `library/` as MP4 and tracked in `library/index.json`. The library server exposes them over HTTP with CORS headers so Hydra can load them via `initVideo()`.
 
+> **New to `initVideo()`?** See [QUICKSTART.md](QUICKSTART.md) for the shortest path from a running library server to a video on screen.
+
 ```bash
 # Start the library server (keep running alongside Hydra)
 npm run library:serve
@@ -142,6 +146,13 @@ initVideo('nebula_blue').colorama(0.4).out(o0)
 // Load into a specific buffer
 initVideo('apod_2024-03-01', s1)
 src(s1).modulate(noise(3), 0.2).out(o0)
+```
+
+The same server also exposes the sketch catalog, so the full library of 30 sketches is reachable over HTTP alongside the videos:
+
+```bash
+curl http://localhost:3001/sketches                              # JSON list: category, file, title, path
+curl http://localhost:3001/sketches/chiptune/ch_01_pixel_grid.js # raw source
 ```
 
 ---
