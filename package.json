@@ -19,6 +19,7 @@
     "nasa:search": "node tools/nasa_gif.js search nebula",
     "library:serve": "node tools/library_server.js",
     "library:list": "node tools/nasa_gif.js list",
+    "sketches:list": "node tools/list_sketches.js",
     "lint": "eslint sketches/**/*.js tools/**/*.js"
   },
   "devDependencies": {

@@ -6,15 +6,14 @@
 //
 // Usage: npm run library:serve  (or: node tools/library_server.js)
 
-import { createReadStream, readFileSync, statSync, existsSync, readdirSync } from 'fs'
+import { createReadStream, statSync, existsSync, readdirSync } from 'fs'
 import { createServer } from 'http'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { listSketches, SKETCH_DIR } from './sketches.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const LIBRARY_DIR = path.resolve(__dirname, '../library')
-const SKETCH_DIR = path.resolve(__dirname, '../sketches')
-const SKETCH_CATEGORIES = ['chiptune', 'techno', 'jungle_idm']
 const PORT = 3001
 
 const MIME = {
@@ -22,24 +21,6 @@ const MIME = {
   '.webm': 'video/webm',
   '.json': 'application/json',
   '.js':   'application/javascript',
-}
-
-function listSketches() {
-  const out = []
-  for (const category of SKETCH_CATEGORIES) {
-    const dir = path.join(SKETCH_DIR, category)
-    if (!existsSync(dir)) continue
-    for (const file of readdirSync(dir).filter(f => f.endsWith('.js')).sort()) {
-      const firstLine = readFileSync(path.join(dir, file), 'utf8').split('\n')[0]
-      out.push({
-        category,
-        file,
-        title: firstLine.replace(/^\/\/\s*/, '').trim() || file,
-        path: `/sketches/${category}/${file}`,
-      })
-    }
-  }
-  return out
 }
 
 function corsHeaders() {
