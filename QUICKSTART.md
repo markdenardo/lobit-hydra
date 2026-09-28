@@ -67,6 +67,13 @@ src(s1).modulate(noise(3), 0.2).out(o0)
 
 Any of these can be the `.out(o0)` pipeline you drop `initVideo()` into as a source. Full descriptions in the main [README](README.md#sketch-categories); paste from `sketches/<category>/<file>.js`.
 
+The same `library:serve` server (port 3001) also serves this catalog, so you can fetch sketch source without touching the filesystem:
+
+```bash
+curl http://localhost:3001/sketches                              # JSON list: category, file, title, path
+curl http://localhost:3001/sketches/chiptune/ch_01_pixel_grid.js # raw source
+```
+
 ### Chiptune (`sketches/chiptune/`)
 
 | File | Vibe |
